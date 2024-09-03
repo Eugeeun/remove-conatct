@@ -4,28 +4,15 @@ import GroupSelect from './GroupSelect';
 import ContactList from './ContactList';
 import GroupModal from './GroupModal';
 import ContactDetailModal from './ContactDetailModal';
-import useForm from './useForm';
 import '../css/App.css';
 
 const App = () => {
-  const {
-    name,
-    phone,
-    group,
-    memo,
-    nameError,
-    phoneError,
-    handleInputChange,
-    handleGroupChange,
-    resetForm,
-    validateForm,
-  } = useForm({
-    name: '',
-    phone: '',
-    group: '',
-    memo: '',
-  });
-
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [group, setGroup] = useState('');
+  const [memo, setMemo] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [contacts, setContacts] = useState(
     () => JSON.parse(localStorage.getItem('contacts')) || []
   );
@@ -45,18 +32,50 @@ const App = () => {
     localStorage.setItem('groups', JSON.stringify(groups));
   }, [groups]);
 
-  const handleSave = () => {
-    if (!validateForm()) return;
-
-    const isDuplicate = contacts.some(contact => contact.name === name);
-    if (isDuplicate) {
-      alert('이미 같은 이름의 연락처가 존재합니다.');
-      return;
+  const validateName = name => {
+    if (name.length < 2) {
+      setNameError('이름은 두 글자 이상 입력해야 합니다.');
+    } else {
+      setNameError('');
     }
+  };
 
-    const newContact = { name, phone, group, memo };
-    setContacts([newContact, ...contacts]);
-    resetForm();
+  const validatePhone = phone => {
+    const phonePattern = /^010-\d{4}-\d{4}$/;
+    if (!phonePattern.test(phone)) {
+      setPhoneError('전화번호는 010-0000-0000 형식이어야 합니다.');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handleNameChange = e => {
+    const newName = e.target.value;
+    setName(newName);
+    validateName(newName);
+  };
+
+  const handlePhoneChange = e => {
+    const newPhone = e.target.value;
+    setPhone(newPhone);
+    validatePhone(newPhone);
+  };
+
+  const handleSave = () => {
+    if (!nameError && !phoneError && name && phone) {
+      const isDuplicate = contacts.some(contact => contact.name === name);
+      if (isDuplicate) {
+        alert('이미 같은 이름의 연락처가 존재합니다.');
+        return;
+      }
+
+      const newContact = { name, phone, group, memo };
+      setContacts([newContact, ...contacts]);
+      setName('');
+      setPhone('');
+      setGroup('');
+      setMemo('');
+    }
   };
 
   const handleAddGroup = newGroup => {
@@ -110,30 +129,25 @@ const App = () => {
   return (
     <div className='app'>
       <div className='input-wrap'>
-        <InputField
-          label='이름'
-          value={name}
-          onChange={handleInputChange('name')}
-          placeholder='이름'
-        />
+        <InputField label='이름' value={name} onChange={handleNameChange} placeholder='이름' />
         {nameError && <div className='error-message'>{nameError}</div>}
         <InputField
           label='전화번호'
           value={phone}
-          onChange={handleInputChange('phone')}
+          onChange={handlePhoneChange}
           placeholder='전화번호 (예: 010-1234-5678)'
         />
         {phoneError && <div className='error-message'>{phoneError}</div>}
         <GroupSelect
           groups={groups}
           selectedGroup={group}
-          onGroupChange={handleGroupChange}
+          onGroupChange={e => setGroup(e.target.value)}
           onAddGroup={() => setModalOpen(true)}
         />
         <InputField
           label='메모'
           value={memo}
-          onChange={handleInputChange('memo')}
+          onChange={e => setMemo(e.target.value)}
           placeholder='메모'
         />
         <button onClick={handleSave}>저장</button>
